@@ -32,11 +32,18 @@ class GZorro():
 
         skippedFiles = []
         outputFolder = os.path.join(input_dir, 'Compressed')
-        inputFolderSize = 0 #KB
-        outputFolderSize = 0 #KB
+        inputFolderSize = 0 # Bytes
+        outputFolderSize = 0 # Bytes
 
         if os.path.isdir(outputFolder) :
-            shutil.rmtree(outputFolder)
+            try:
+                shutil.rmtree(outputFolder)
+            except OSError as e:
+                if e.errno == 13:
+                    print("Permissions error. Try running as a root.")
+                    return
+                else:
+                    raise
 
         dir_util.copy_tree(input_dir, outputFolder)
 
@@ -60,6 +67,11 @@ class GZorro():
                         file_out.writelines(file_in)
                         outputFolderSize = outputFolderSize + os.path.getsize(outputFile)
                         os.rename(outputFile, inputFile)
+
+
+        if (inputFolderSize == 0):
+            print 'Do you think giving me an empty folder is cool, huh?'
+            return
 
 
         print('All done. Saved ' + str(((inputFolderSize - outputFolderSize) / 1024)) + " KB. Look in '/" + os.path.basename(input_dir.strip('/')) + "/Compressed' for your files.")
