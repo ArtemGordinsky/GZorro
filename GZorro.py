@@ -3,6 +3,7 @@ import gzip
 from distutils import dir_util
 import argparse
 import shutil
+from Exceptions import ForbiddenFile
 
 _allowedExt = ['.html', '.css', '.js']
 
