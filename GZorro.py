@@ -12,22 +12,32 @@ class GZorro():
     def __init__(self, input_item):
 
         if os.path.isfile(input_item):
-            self.f_gzip(input_item)
+            try:
+                self.f_gzip(input_item)
+            except ForbiddenFile as e:
+                print(str(e))
+                return
 
         elif os.path.isdir(input_item):
             self.dir_gzip(input_item)
 
 
-    def f_gzip(self, input, output=input):
+    def f_gzip(self, inputFile, showMessages = 1):
 
-        fileExt = os.path.splitext(input)[1]
+        fileExt = os.path.splitext(inputFile)[1]
         if fileExt not in _allowedExt:
-            print("There's usually no point in compressing such files.")
-            return
+            raise ForbiddenFile("There's usually no point in compressing such files.")
 
-        with open(input, 'rb') as file_input:
-            with gzip.open(output, 'wb') as file_output:
-                file_output.writelines(file_input)
+        outputFile = inputFile + '.gz'
+
+        with open(inputFile, 'rb') as file_in:
+            with gzip.open(outputFile, 'wb') as file_out:
+                file_out.writelines(file_in)
+
+        if showMessages == 1 :
+            print('All done. Saved as ' + os.path.basename(outputFile.strip('/')))
+
+        return outputFile
 
 
     def dir_gzip(self, input_dir):
@@ -59,24 +69,24 @@ class GZorro():
                     continue
 
                 inputFile = os.path.join(root, name)
-                inputFolderSize = inputFolderSize + os.path.getsize(inputFile);
+                inputFolderSize = inputFolderSize + os.path.getsize(inputFile)
 
-                outputFile = os.path.join(root, name + '.gz');
+                try:
+                    outputFile = self.f_gzip(inputFile, 0)
+                except ForbiddenFile as e:
+                    skippedFiles.append(name)
+                    continue
 
-                with open(inputFile, 'rb') as file_in:
-
-                    with gzip.open(outputFile, 'wb') as file_out:
-                        file_out.writelines(file_in)
-                        outputFolderSize = outputFolderSize + os.path.getsize(outputFile)
-                        os.rename(outputFile, inputFile)
+                outputFolderSize = outputFolderSize + os.path.getsize(outputFile)
+                os.rename(outputFile, inputFile)
 
 
         if (inputFolderSize == 0):
-            print 'Do you think giving me an empty folder is cool, huh?'
+            print('Do you think giving me an empty folder is cool, huh?')
             return
 
-
-        print('All done. Saved ' + str(((inputFolderSize - outputFolderSize) / 1024)) + " KB. Look in '/" + os.path.basename(input_dir.strip('/')) + "/Compressed' for your files.")
+        kbSaved = round( ((inputFolderSize - outputFolderSize) / 1024), 1)
+        print('All done. Saved ' + str(kbSaved) + ' KB. Saved to …/' + os.path.basename(input_dir.strip('/')) + "/Compressed'.")
 
         if len(skippedFiles) > 0:
             print ('Skipped: ' + str(skippedFiles))
